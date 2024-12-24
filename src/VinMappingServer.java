@@ -39,20 +39,27 @@ public class VinMappingServer {
 
 			LOGGER.info("Received message: " + clientMessage + " from " + clientAddress);
 
-			if (!clientMessage.startsWith("VIN:") || clientMessage.length() < 4) {
-				sendResponse("Invalid message format. Expected: VIN:<17-character VIN>", clientAddress, clientPort,
-					serverSocket);
+			if (!clientMessage.startsWith("VIN:") || !clientMessage.contains(",IP:")) {
+				sendResponse("Invalid message format. Expected: VIN:<17-character VIN>,IP:<IP Address>", clientAddress, clientPort, serverSocket);
 				return;
 			}
 
-			String vinNumber = clientMessage.substring(4).trim();
+			// Parse VIN and IP from the message
+			String[] parts = clientMessage.split(",IP:");
+			if (parts.length != 2) {
+				sendResponse("Invalid message format. Expected: VIN:<17-character VIN>,IP:<IP Address>", clientAddress, clientPort, serverSocket);
+				return;
+			}
+
+			String vinNumber = parts[0].substring(4).trim();
+			String address = parts[1].trim();
+
 			if (!isValidVin(vinNumber)) {
 				sendResponse("Invalid VIN number: " + vinNumber, clientAddress, clientPort, serverSocket);
 				return;
 			}
 
 			// String clientKey = clientAddress.toString() + ":" + clientPort;
-			String address = clientAddress.getHostAddress();
 			mappingTable.put(address, vinNumber);
 			sendResponse("Mapping registered.", clientAddress, clientPort, serverSocket);
 			LOGGER.info("Mapping registered for IP = " + address);
